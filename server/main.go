@@ -19,6 +19,17 @@ func HandleConnection(conn net.Conn, path string) {
 	sendMassage(conn, fmt.Sprintf("%s, Score: %f", college.String(), score))
 }
 
+type CollegeList struct {
+	list []*univercity.College
+	mu   sync.Mutex
+}
+
+func (c *CollegeList) AddCollege(college *univercity.College) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.list = append(c.list, college)
+}
+
 func processFiles(conn net.Conn, path string) (*univercity.College, float64) {
 	files, err := fileManager.ReadDirectory(path)
 	if err != nil {
@@ -31,16 +42,16 @@ func processFiles(conn net.Conn, path string) (*univercity.College, float64) {
 		return nil, 0
 	}
 
-	getColleges := make(chan *univercity.College, len(files))
+	collegeList := CollegeList{}
 	wg := sync.WaitGroup{}
 
 	for _, file := range files {
 		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			records, err := fileManager.ReadCSV(path + "/" + file)
 			if err != nil {
 				sendMassage(conn, fmt.Sprintf("error while reading file %s: %v", file, err))
-				wg.Done()
 				return
 			}
 
@@ -50,71 +61,44 @@ func processFiles(conn net.Conn, path string) (*univercity.College, float64) {
 
 			wg2 := sync.WaitGroup{}
 
-			for i, row := range records {
+			for _, row := range records[1:] {
 				wg2.Add(1)
 				go func() {
-					if i == 0 {
-						wg2.Done()
-						return
-					}
-
-					// Convert the fields to the appropriate types
+					defer wg2.Done()
 					id, err := strconv.Atoi(row[0])
 					if err != nil {
 						sendMassage(conn, fmt.Sprintf("Error parsing ID: %v", err))
-						wg2.Done()
 						return
 					}
 
 					grade, err := strconv.ParseFloat(row[2], 64)
 					if err != nil {
 						sendMassage(conn, fmt.Sprintf("Error parsing Grade: %v", err))
-						wg2.Done()
 						return
 					}
 
-					// Create a new Student struct and append it to the list
 					student := univercity.Student{
 						ID:    id,
 						Name:  row[1],
 						Grade: grade,
 					}
 					college.AddStudent(student)
-					routineID := goroutine.GoID()
-					log.Printf("Go Routine %d has been processed", routineID)
-					wg2.Done()
+					log.Printf("Go Routine %d has been processed", goroutine.GoID())
 				}()
 			}
 			wg2.Wait()
-			getColleges <- college
-			routineID := goroutine.GoID()
-			log.Printf("Go Routine %d has been processed", routineID)
-			wg.Done()
+			collegeList.AddCollege(college)
+			log.Printf("Go Routine %d has been processed", goroutine.GoID())
 		}()
 	}
-
 	wg.Wait()
 
-	if len(getColleges) < len(files) {
-		sendMassage(conn, "error in reading college a college data")
-		return nil, 0
-	}
+	list := collegeList.list
 
-	var list []*univercity.College
-
-loop:
-	for {
-		college := <-getColleges
-		list = append(list, college)
-
-		if len(list) == len(files) {
-			break loop
-		}
-	}
-
-	topScore := 0.0
 	topCollege := list[0]
-	for _, college := range list[:1] {
+	topScore := topCollege.CalculateScore()
+	for _, college := range list[1:] {
+		fmt.Println(college.Name)
 		score := college.CalculateScore()
 		if score > topScore {
 			topCollege = college

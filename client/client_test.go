@@ -4,7 +4,7 @@ import "testing"
 
 var (
 	host = "localhost"
-	port = 2000
+	port = 2001
 )
 
 func TestMakeClient(t *testing.T) {
