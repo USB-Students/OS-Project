@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/USB-Students/OS_Project/goroutine"
 	"log"
 	"net"
 	"strconv"
@@ -79,11 +80,15 @@ func processFiles(conn net.Conn, path string) (*univercity.College, float64) {
 						Grade: grade,
 					}
 					college.AddStudent(student)
+					routineID := goroutine.GoID()
+					log.Printf("Go Routine %d has been processed", routineID)
 					wg2.Done()
 				}()
 			}
 			wg2.Wait()
 			getColleges <- college
+			routineID := goroutine.GoID()
+			log.Printf("Go Routine %d has been processed", routineID)
 			wg.Done()
 		}()
 	}
