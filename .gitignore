@@ -25,3 +25,7 @@ go.work.sum
 .env
 
 .idea
+*.csv
+data/power.csv
+data/it.csv
+*.csv

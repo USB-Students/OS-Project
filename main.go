@@ -3,11 +3,12 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/USB-Students/OS_Project/config"
-	"github.com/USB-Students/OS_Project/server"
 	"log"
 	"net"
 	"os"
+
+	"github.com/USB-Students/OS_Project/config"
+	"github.com/USB-Students/OS_Project/server"
 )
 
 func main() {

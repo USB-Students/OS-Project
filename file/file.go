@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func ReadDirectory(directory string) ([]string, error) {
@@ -25,8 +26,10 @@ func ReadDirectory(directory string) ([]string, error) {
 	}
 
 	for _, file := range files {
-		if !file.IsDir() && filepath.Ext(file.Name()) == ".csv" {
-			specificFormatFiles = append(specificFormatFiles, file.Name())
+		name := file.Name()
+		if !file.IsDir() && filepath.Ext(name) == ".csv" {
+			fileNameWithoutExt := strings.TrimSuffix(name, filepath.Ext(name))
+			specificFormatFiles = append(specificFormatFiles, fileNameWithoutExt)
 		}
 	}
 	return specificFormatFiles, nil
