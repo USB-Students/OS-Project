@@ -108,7 +108,7 @@ func decodeCollegeParallel(path, file string) (*univercity.College, error) {
 	return college, nil
 }
 
-func ProcessFilesSync(path string) (*univercity.SyncCollege, float64, error) {
+func ProcessFilesSync(path string) (*univercity.College, float64, error) {
 	files, err := fileManager.ReadDirectory(path)
 	if err != nil {
 		return nil, 0, fmt.Errorf("error reading files: %v", err)
@@ -118,7 +118,7 @@ func ProcessFilesSync(path string) (*univercity.SyncCollege, float64, error) {
 		return nil, 0, fmt.Errorf("you should have 2 or more file to process")
 	}
 
-	var collegeList []*univercity.SyncCollege
+	var collegeList []*univercity.College
 
 	for _, file := range files {
 		college, err := decodeCollegeSync(path, file)
@@ -141,13 +141,13 @@ func ProcessFilesSync(path string) (*univercity.SyncCollege, float64, error) {
 	return topCollege, topScore, nil
 }
 
-func decodeCollegeSync(path, file string) (*univercity.SyncCollege, error) {
+func decodeCollegeSync(path, file string) (*univercity.College, error) {
 	records, err := fileManager.ReadCSV(path + "/" + file + ".csv")
 	if err != nil {
 		return nil, fmt.Errorf("error while reading file %s: %v", path, err)
 	}
 
-	college := &univercity.SyncCollege{
+	college := &univercity.College{
 		Name: file,
 	}
 
