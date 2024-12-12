@@ -12,13 +12,14 @@ import (
 )
 
 func main() {
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", config.TcpHost, config.TcpPort))
+	addr := fmt.Sprintf("%s:%d", config.TcpHost, config.TcpPort)
+	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatalf("Error starting TCP server: %v", err)
 	}
 	defer listener.Close()
 
-	log.Printf("Server listening on port %d \n", config.TcpPort)
+	log.Printf("Server listening on %s \n", addr)
 
 	go func() {
 		for {

@@ -32,8 +32,7 @@ func (c *College) CalculateScore() float64 {
 			topStudents++
 		}
 	}
-
-	return float64(topStudents) / float64(len(c.students)) * 100
+	return float64(topStudents) / float64(c.studentsCount) * 100
 }
 
 func (c *College) String() string {

@@ -8,27 +8,30 @@ import (
 	"strings"
 )
 
-func ReadDirectory(directory string) ([]string, error) {
-	var specificFormatFiles []string
-
+func ReadDirectory(directory string, format string) ([]string, error) {
 	info, err := os.Stat(directory)
 	if os.IsNotExist(err) {
-		return specificFormatFiles, fmt.Errorf("directory does not exist")
+		return nil, fmt.Errorf("directory does not exist")
 	}
 
 	if !info.IsDir() {
-		return specificFormatFiles, fmt.Errorf("path is not a directory")
+		return nil, fmt.Errorf("path is not a directory")
 	}
 
 	files, err := os.ReadDir(directory)
 	if err != nil {
-		return specificFormatFiles, err
+		return nil, err
 	}
+
+	var specificFormatFiles []string
+
+	fileFormat := "." + format
 
 	for _, file := range files {
 		name := file.Name()
-		if !file.IsDir() && filepath.Ext(name) == ".csv" {
-			fileNameWithoutExt := strings.TrimSuffix(name, filepath.Ext(name))
+		extend := filepath.Ext(name)
+		if !file.IsDir() && extend == fileFormat {
+			fileNameWithoutExt := strings.TrimSuffix(name, extend)
 			specificFormatFiles = append(specificFormatFiles, fileNameWithoutExt)
 		}
 	}
@@ -36,15 +39,15 @@ func ReadDirectory(directory string) ([]string, error) {
 }
 
 func ReadCSV(path string) ([][]string, error) {
-	var records [][]string
-
 	file, err := os.Open(path)
 	if err != nil {
-		return records, err
+		return nil, err
 	}
 	defer file.Close()
 
 	reader := csv.NewReader(file)
+
+	var records [][]string
 
 	records, err = reader.ReadAll()
 	if err != nil {

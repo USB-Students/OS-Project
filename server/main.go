@@ -2,20 +2,20 @@ package server
 
 import (
 	"fmt"
-	"github.com/USB-Students/OS_Project/goroutine"
 	"log"
 	"net"
 	"strconv"
 	"sync"
 
 	fileManager "github.com/USB-Students/OS_Project/file"
+	"github.com/USB-Students/OS_Project/goroutine"
 	"github.com/USB-Students/OS_Project/univercity"
 )
 
-func HandleConnection(conn net.Conn, path string) {
+func HandleConnection(conn net.Conn, directory string) {
 	defer conn.Close()
 	log.Println("Processing request from", conn.RemoteAddr())
-	college, score, err := ProcessFilesParallel(path)
+	college, score, err := ProcessFilesParallel(directory)
 	if err != nil {
 		sendMassage(conn, err.Error())
 		return
@@ -35,7 +35,7 @@ func (c *CollegeList) AddCollege(college *univercity.College) {
 }
 
 func ProcessFilesParallel(path string) (*univercity.College, float64, error) {
-	files, err := fileManager.ReadDirectory(path)
+	files, err := fileManager.ReadDirectory(path, "csv")
 	if err != nil {
 		return nil, 0, fmt.Errorf("error reading files: %v", err)
 	}
@@ -45,7 +45,7 @@ func ProcessFilesParallel(path string) (*univercity.College, float64, error) {
 	}
 
 	collegeList := CollegeList{}
-	wg := sync.WaitGroup{}
+	var wg sync.WaitGroup
 
 	for _, file := range files {
 		wg.Add(1)
@@ -53,7 +53,7 @@ func ProcessFilesParallel(path string) (*univercity.College, float64, error) {
 			defer log.Printf("Go Routine %d has been processed", goroutine.GoID())
 			defer wg.Done()
 
-			college, err := decodeCollegeParallel(path, file)
+			college, err := decodeCollege(path, file)
 			if err != nil {
 				log.Println(err)
 			}
@@ -87,29 +87,8 @@ func sendMassage(conn net.Conn, message string) {
 	log.Println("The message was send")
 }
 
-func decodeCollegeParallel(path, file string) (*univercity.College, error) {
-	records, err := fileManager.ReadCSV(path + "/" + file + ".csv")
-	if err != nil {
-		return nil, fmt.Errorf("error while reading file %s: %v", path, err)
-	}
-
-	college := &univercity.College{
-		Name: file,
-	}
-
-	for _, row := range records[1:] {
-		student, err := decodeStudent(row)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		college.AddStudent(student)
-	}
-	return college, nil
-}
-
 func ProcessFilesSync(path string) (*univercity.College, float64, error) {
-	files, err := fileManager.ReadDirectory(path)
+	files, err := fileManager.ReadDirectory(path, "csv")
 	if err != nil {
 		return nil, 0, fmt.Errorf("error reading files: %v", err)
 	}
@@ -118,19 +97,19 @@ func ProcessFilesSync(path string) (*univercity.College, float64, error) {
 		return nil, 0, fmt.Errorf("you should have 2 or more file to process")
 	}
 
-	var collegeList []*univercity.College
+	var list []*univercity.College
 
 	for _, file := range files {
-		college, err := decodeCollegeSync(path, file)
+		college, err := decodeCollege(path, file)
 		if err != nil {
-			log.Println(err)
+			return nil, 0, err
 		}
-		collegeList = append(collegeList, college)
+		list = append(list, college)
 	}
 
-	topCollege := collegeList[0]
+	topCollege := list[0]
 	topScore := topCollege.CalculateScore()
-	for _, college := range collegeList[1:] {
+	for _, college := range list[1:] {
 		score := college.CalculateScore()
 		if score > topScore {
 			topCollege = college
@@ -141,7 +120,7 @@ func ProcessFilesSync(path string) (*univercity.College, float64, error) {
 	return topCollege, topScore, nil
 }
 
-func decodeCollegeSync(path, file string) (*univercity.College, error) {
+func decodeCollege(path, file string) (*univercity.College, error) {
 	records, err := fileManager.ReadCSV(path + "/" + file + ".csv")
 	if err != nil {
 		return nil, fmt.Errorf("error while reading file %s: %v", path, err)
@@ -154,8 +133,7 @@ func decodeCollegeSync(path, file string) (*univercity.College, error) {
 	for _, row := range records[1:] {
 		student, err := decodeStudent(row)
 		if err != nil {
-			log.Println(err)
-			continue
+			return nil, err
 		}
 		college.AddStudent(student)
 	}

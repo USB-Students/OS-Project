@@ -37,5 +37,5 @@ func MakeClient(host string, port int) {
 	fmt.Println("Response from server:", response)
 
 	fmt.Println("Press Enter to exit...")
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	_, _ = bufio.NewReader(os.Stdin).ReadBytes('\n')
 }

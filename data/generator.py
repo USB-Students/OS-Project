@@ -30,4 +30,4 @@ def generate_random_data(num_records, filename="bulk_data.csv"):
     print(f"Generated {num_records} records in {filename}")
 
 
-generate_random_data(100000,"chemistry.csv")
+generate_random_data(100000, "chemistry.csv")
